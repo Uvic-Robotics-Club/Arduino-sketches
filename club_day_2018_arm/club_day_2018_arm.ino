@@ -49,16 +49,16 @@ void update_motors(){
   int cycleTime = abs(t % 100);
 
   // Stop everything if we haven't heard an update within the last 100 milliseconds
-  if (t - lastUpdate > 100){
+  /*if (t - lastUpdate > 100){
     digitalWrite(UPPER_DIR, LOW);
     digitalWrite(LOWER_DIR, LOW);
     analogWrite(UPPER_PWM, 0);
     analogWrite(LOWER_PWM, 0);
-  }
+  }*/
   // If cycleTime is less than the speed value, turn it on. Otherwise, turn it off.
   // This gives pulses (note: not actually a pwm) of variable length to control how quickly the arm moves
   // Using a simple pwm is unreliable at lower strengths, and cannot do fine controls (due to inductance/friction in motors)
-  else {
+  // else {
     digitalWrite(UPPER_DIR, upperDirection);
     digitalWrite(LOWER_DIR, lowerDirection);
     if (cycleTime < upperSpeed)
@@ -69,7 +69,7 @@ void update_motors(){
       analogWrite(LOWER_PWM, 255);
     else
       analogWrite(LOWER_PWM, 0);
-  }
+  //}
 }
 
 
@@ -79,11 +79,11 @@ void serialEvent(){
   if (Serial.available() > 1){
     // Grab 2 integers from serial
     lowerSpeed = Serial.parseInt();
-    upperSpeed = Serial.parseInt();
-    int key = Serial.parseInt();
+    // upperSpeed = Serial.parseInt();
+    // int key = Serial.parseInt();
     // Ensure there isn't any issues with the data. If rhe key doesn't match, don't update the data
-    if (!(key == 314))
-      return;
+    // if (!(key == 314))
+    //  return;
 
     // Positive/negative indicates direction, abs. value indicates speed
     if (lowerSpeed < 0){
