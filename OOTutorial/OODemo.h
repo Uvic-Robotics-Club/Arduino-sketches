@@ -31,7 +31,7 @@ class OODemo{
     void updateMotor();
     
   private:
-    //stuff here CANNOT be accessed by the .in
+    //stuff here CANNOT be accessed by the .ino
     int speed;
 };
 

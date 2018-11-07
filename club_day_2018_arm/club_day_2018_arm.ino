@@ -14,11 +14,13 @@
 #define LOWER_DIR 11
 
 // Initialize global control variables
-int upperSpeed = 0;
+int upperSpeed = 50;
 int lowerSpeed = 0;
-int upperDirection = 0;
+int upperDirection = HIGH;
 int lowerDirection = 0;
 long lastUpdate = 0;
+int serialtemp;
+int analogtemp;
 
 // Setup code, runs once
 void setup() {
@@ -34,6 +36,7 @@ void setup() {
 
 // Main code, rus repeatedly
 void loop() {
+  Serial.println(analogRead(A0));
   update_motors();
 }
 
@@ -45,22 +48,34 @@ void update_motors(){
   // it will overflow at just over 30 seconds. Using a long increases this to about 50 days
   long t = millis();
   // Mod of a negative number is negative in Arduino (if not 0). Cycle time MUST be positive
-  // This is only technically needed when t is negative (at times <50 days), but is good practice
+  // This is only technically needed when t is negative (at times >50 days), but is good practice
   int cycleTime = abs(t % 100);
 
   // Stop everything if we haven't heard an update within the last 100 milliseconds
-  if (t - lastUpdate > 100){
+  /*if (t - lastUpdate > 100){
     digitalWrite(UPPER_DIR, LOW);
     digitalWrite(LOWER_DIR, LOW);
     analogWrite(UPPER_PWM, 0);
     analogWrite(LOWER_PWM, 0);
-  }
+  }*/
   // If cycleTime is less than the speed value, turn it on. Otherwise, turn it off.
   // This gives pulses (note: not actually a pwm) of variable length to control how quickly the arm moves
   // Using a simple pwm is unreliable at lower strengths, and cannot do fine controls (due to inductance/friction in motors)
-  else {
+  // else {
+    if (analogRead(A0) > 800){
+      upperDirection = HIGH;
+      lowerDirection = HIGH;
+    }
+    if (analogRead(A0) < 200){
+      upperDirection = LOW;
+      lowerDirection = LOW;
+    }
     digitalWrite(UPPER_DIR, upperDirection);
     digitalWrite(LOWER_DIR, lowerDirection);
+
+    /*if (analogRead(A0) > 800){
+      analogWrite(UPPER_PWM, 0);
+    }*/
     if (cycleTime < upperSpeed)
       analogWrite(UPPER_PWM, 255);
     else
@@ -69,23 +84,25 @@ void update_motors(){
       analogWrite(LOWER_PWM, 255);
     else
       analogWrite(LOWER_PWM, 0);
-  }
+  //}
 }
 
 
 // Runs once between each call of loop. Parses serial data if available,
 // Updates lastUpdate to indicate it received new information
 void serialEvent(){
+  /*
   if (Serial.available() > 1){
     // Grab 2 integers from serial
-    lowerSpeed = Serial.parseInt();
-    upperSpeed = Serial.parseInt();
-    int key = Serial.parseInt();
+    // lowerSpeed = Serial.parseInt();
+    // upperSpeed = Serial.parseInt();
+    // int key = Serial.parseInt();
     // Ensure there isn't any issues with the data. If rhe key doesn't match, don't update the data
-    if (!(key == 314))
-      return;
+    // if (!(key == 314))
+    //  return;
 
     // Positive/negative indicates direction, abs. value indicates speed
+    
     if (lowerSpeed < 0){
       lowerSpeed = 0 - lowerSpeed;
       lowerDirection = 0;
@@ -93,7 +110,7 @@ void serialEvent(){
     else{
       lowerDirection = 1;
     }
-
+    
     if (upperSpeed < 0){
       upperSpeed = 0 - upperSpeed;
       upperDirection = 0;
@@ -101,9 +118,22 @@ void serialEvent(){
     else{
       upperDirection = 1;
     }
+    
 
+     if (upperSpeed<51){
+      upperSpeed =  upperSpeed- 50;
+    
+    }
+
+    if (upperSpeed<100){
+      upperSpeed = 50 + upperSpeed;
+    
+    }
+*/
+    
+    
     // Record the time of the most recent successful data read (for timeout logic)
     lastUpdate = millis();
-  }
+  //}
 }
 

@@ -2,7 +2,7 @@
 
 //initializes the object
 //the actual setup happens in the begin() function
-OODemo::OODemo(){ 
+OODemo::OODemo(){
 }
 
 //Set up the object
