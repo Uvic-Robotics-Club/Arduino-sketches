@@ -1,9 +1,7 @@
 /* runt_rover.ino
    This program receives (over serial) the speed and direction of the left and
    right sides of the runt rover. This is given by the following form:
-
    <start marker><left speed integer><seperator><right speed integer><end marker>
-
    The left and right speeds are values [-100, 100] where a negative value
    specifies the reverse direction. The start marker is the '>' character. The
    seperator is a comma. The end marker is the '<' character.
@@ -35,16 +33,17 @@ const int BAUD_RATE = 9600; // TODO: Set up baud rate to work with Pi
 
 const int SPEED_MAX = 100;
 const int SPEED_MIN = -100;
-const char PACKET_START_MARKER = '>';
-const char PACKET_SEPARATOR[2] = ",";
-const char PACKET_END_MARKER = '<';
+const char PACKET_START_MARKER = '<';
+const char PACKET_SEPARATOR[2] = "|";
+const char PACKET_END_MARKER = '>';
+const char SPEED_PACKET_SEPARATOR[2] = ",";
 
 int8_t speed_left;
 int8_t speed_right;
 int8_t speed_left_setpoint;
 int8_t speed_right_setpoint;
 
-const int SERIAL_BUFFER_SIZE = 8;
+const int SERIAL_BUFFER_SIZE = 9;
 char serial_buffer[SERIAL_BUFFER_SIZE];
 bool packet_available;
 
@@ -91,9 +90,7 @@ void loop()
 
 /* Check if there is data available to read over serial and add it to the serial
    buffer.
-
    Input: None
-
    Return: None
 */
 void receive_data()
@@ -150,9 +147,7 @@ void receive_data()
 
 /* Extract the speed setpoint values from the serial buffer and update
    speed_left and speed_right
-
    Input: None
-
    Return: None
 */
 void parse_packet()
@@ -163,28 +158,52 @@ void parse_packet()
   char temp_chars[SERIAL_BUFFER_SIZE];
   int speed_values[2];
   int i;
+  char mode;
 
+//  copy serial buffer over to a new string
   strncpy(temp_chars, serial_buffer, SERIAL_BUFFER_SIZE);
+//  split the packet(temp_chars) into 2 segments by the delimiter '|'
   strtok_ptr = strtok(temp_chars, PACKET_SEPARATOR);
-  for (i = 0; i < 2; i++)
-  {
-      speed_values[i] = atoi(strtok_ptr);
-      if (speed_values[i] < SPEED_MIN || speed_values[i] > SPEED_MAX)
+//  copy over the first segment, which contains the mode, into a variable
+  mode = *strtok_ptr;
+//  point to the second segment containing the data of the packet
+  strtok_ptr = strtok(NULL, PACKET_SEPARATOR);
+
+//  switch case to go through the modes
+  switch(mode){
+
+//  this case asks for ID
+    case 'I':
+    
+      Serial.write(">Motor driver<");
+      break;
+
+//    data contains the motor speeds. data packet is "(left Speed),(right Speed)"
+    case 'S':
+
+//      split the speed data into segments using the delimiter ','
+      strtok_ptr = strtok(strtok_ptr, SPEED_PACKET_SEPARATOR);
+      for (i = 0; i < 2; i++)
       {
-        // Receieved speed is not in range. Ignore this packet.
-        return;
+          speed_values[i] = atoi(strtok_ptr);
+          if (speed_values[i] < SPEED_MIN || speed_values[i] > SPEED_MAX)
+          {
+            // Receieved speed is not in range. Ignore this packet.
+            return;
+          }
+          strtok_ptr = strtok(NULL, SPEED_PACKET_SEPARATOR);
       }
-      strtok_ptr = strtok(NULL, PACKET_SEPARATOR);
+      speed_left_setpoint = speed_values[LEFT_SPEED_INDEX];
+      speed_right_setpoint = speed_values[RIGHT_SPEED_INDEX];
+      break;
+   
   }
-  speed_left_setpoint = speed_values[LEFT_SPEED_INDEX];
-  speed_right_setpoint = speed_values[RIGHT_SPEED_INDEX];
+
 }
 
 /* Increment/decrement speed_left and speed_right by 1 to move closer to the
    setpoint.
-
    Input: None
-
    Return: None
 */
 void update_speed()
@@ -209,9 +228,7 @@ void update_speed()
 }
 
 /* Write speed_left and speed_right to the appropriate pins.
-
    Input: None
-
    Return: None
 */
 void write_speed()

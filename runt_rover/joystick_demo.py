@@ -1,4 +1,4 @@
-# joystick_demo.py
+ # joystick_demo.py
 # This program will read the x and y axis data from a USB connected joystick and
 # will convert that data into left/right speed values for the runt rover. Then it
 # will send those 2 values to the runt rover over serial in the form: 
@@ -12,9 +12,10 @@
 import pygame
 import serial
 from time import time
+import arduino_ports_init
 
-SERIAL_PORT = 'COM4' # TODO: Update to use the correct port
 BAUD_RATE = 9600
+PACKAGE_SIZE = 9
 
 MAX_VAL = 100
 X_AXIS_DEADZONE = 0.14 * MAX_VAL
@@ -23,19 +24,33 @@ Z_AXIS_DEADZONE = 0.20 * MAX_VAL # Rotation around z axis
 SLIDER_OFFSET = 1 * MAX_VAL # Slider in front of joystick
 
 class joystick_demo:
-	
-    def main():
+
+    def control_runt_rover(self):
+
+        # detect the available ports and store them in a dictionary
+        # asf = arduino_ports_init.Arduino_serial_finder()
+        # asf.scan_ports_initialize()
+        # # get the serial based on the arduino's ID.
+        # ser = asf.get_serial_port("Motor driver")
+        
+        # 
+        # if(ser):
+        #     print(ser)
+        # else:
+        #     print('UDrive arduino not connected')
+        #     return
+
         pygame.init()
-        ser = serial.Serial(SERIAL_PORT, BAUD_RATE)
+
         current_time = time()
 
         # Initialize joystick
         try:
-        	joystick = pygame.joystick.Joystick(0)
-        	joystick.init()
+            joystick = pygame.joystick.Joystick(0)
+            joystick.init()
         except pygame.error:
-        	print("Cannot find joystick. Not running joystick.")
-        	return
+            print("Cannot find joystick. Not running joystick.")
+            return
 
         while pygame.joystick.get_count() > 0:
             if (time() - current_time) < 0.05:
@@ -46,10 +61,12 @@ class joystick_demo:
             # X and Y axis is range [-100.0, 100.0] where negative is reverse
             pygame.event.get()
             x_axis = joystick.get_axis(0) * MAX_VAL
-            y_axis = (0 - joystick.get_axis(1)) * MAX_VAL
+            y_axis = (0-joystick.get_axis(1))* MAX_VAL
 
             # Rotation around Z axis is range [-100.0, 100.0] where negative is left rotation
-            z_axis = joystick.get_axis(3) * MAX_VAL
+            z_axis = joystick.get_axis(3)* MAX_VAL
+            # print(x_axis, y_axis, z_axis)
+
             
             # Limiter is in range [0, 10.0] where 0 is when slider is all the way
             # back towards negative sign
@@ -80,9 +97,21 @@ class joystick_demo:
             speedLeft = int(speedLeft)
             speedRight = int(speedRight)
 
-            packet = ">" + str(speedLeft) + "," + str(speedRight) + "<"
+            # :<{PACKAGE_SIZE} will make sure packet has a length of PACKAGE_SIZE
+            # packet = f'{(">" + str(speedLeft) + "," + str(speedRight) + "<"):<{PACKAGE_SIZE}}'
+            packet = "<S|" + str(speedLeft) + "," + str(speedRight) + ">"
             print(packet)
-            ser.write(packet.encode())
+            # ser.write(packet.encode())
 
-    if __name__ == '__main__':
-        main()
+        	
+def main():
+
+
+    joystick_demo().control_runt_rover()
+    # try:
+    #     joystick_demo().control_runt_rover()
+    # except:
+    #     print("The arduino has been disconnected")
+
+if __name__ == '__main__':
+    main()
